@@ -1,0 +1,2 @@
+import { NextResponse } from "next/server";import { prisma } from "@/lib/prisma";import { requireAdmin } from "@/lib/auth";
+export async function PUT(req:Request,{params}:{params:Promise<{id:string}>}){const admin=await requireAdmin().catch(()=>null);if(!admin)return NextResponse.json({error:"UNAUTHORIZED"},{status:401});try{const {id}=await params;const b=await req.json();const o=await prisma.order.update({where:{id:Number(id)},data:{status:b.status}});return NextResponse.json(o)}catch(e){return NextResponse.json({error:e instanceof Error?e.message:"Ошибка"},{status:400})}}
