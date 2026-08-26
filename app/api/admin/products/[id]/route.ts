@@ -57,7 +57,7 @@ export async function PUT(
             await tx.productVariant.create({
               data: {
                 productId,
-                sku: v.sku,
+                sku: v.sku || `${b.slug}-${v.size}-${v.color}`,
                 size: v.size,
                 color: v.color,
                 stock: Number(v.stock),
