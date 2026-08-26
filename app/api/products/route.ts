@@ -4,10 +4,16 @@ import {prisma} from '@/lib/prisma';
 export async function GET(r: NextRequest) {
   const q = r.nextUrl.searchParams,
     cat = q.get('category'),
-    sort = q.get('sort');
-  
+    sort = q.get('sort'),
+    collection = q.get('collection');
+
+  const where = {
+    ...(cat && cat !== 'Все' ? {category: {slug: cat}} : {}),
+    ...(collection ? {collections: {some: {collection: {slug: collection}}}} : {})
+  };
+
   const rows = await prisma.product.findMany({
-    where: cat && cat !== 'Все' ? {category: {slug: cat}} : undefined,
+    where: Object.keys(where).length ? where : undefined,
     include: {category: true, variants: true, images: true},
     orderBy: sort === 'price' ? {price: 'asc'} : sort === 'priceDesc' ? {price: 'desc'} : {createdAt: 'desc'}
   });

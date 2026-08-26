@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   const admin = await requireAdmin().catch(() => null);
   if (!admin) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   try {
-    const { name, slug, description, image, sortOrder, productIds } = await req.json();
+    const { name, slug, description, image, sortOrder, productIds, active } = await req.json();
 
     const collection = await prisma.collection.create({
       data: {
@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
         description,
         image,
         sortOrder: sortOrder || 0,
+        active: active ?? true,
         products: {
           create: (productIds || []).map((productId: number) => ({ productId })),
         },

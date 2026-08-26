@@ -28,7 +28,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const admin = await requireAdmin().catch(() => null);
   if (!admin) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   try {
-    const { name, slug, description, image, sortOrder, productIds } = await req.json();
+    const { name, slug, description, image, sortOrder, productIds, active } = await req.json();
     const id = parseInt(params.id);
 
     // Remove old products
@@ -44,6 +44,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         description,
         image,
         sortOrder: sortOrder || 0,
+        active: active ?? true,
         products: {
           create: (productIds || []).map((productId: number) => ({ productId })),
         },
