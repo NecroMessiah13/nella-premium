@@ -43,7 +43,8 @@ export function ProductCard({product}:{product:Product}) {
 
   if (showSizeSelector) {
     return <article className="productCard">
-      <div className="sizeSelector">
+      <div className="sizeSelector" onClick={() => setShowSizeSelector(false)}>
+        <div className="sizePanel" onClick={(e) => e.stopPropagation()}>
         <p style={{marginBottom: '12px', fontWeight: 500}}>Выберите размер</p>
         <div className="sizes" style={{display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', marginBottom: '12px'}}>
           {['XS','S','M','L','XL'].map(s => {
@@ -76,6 +77,7 @@ export function ProductCard({product}:{product:Product}) {
         >
           Отмена
         </button>
+        </div>
       </div>
     </article>
   }
