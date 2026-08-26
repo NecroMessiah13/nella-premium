@@ -103,7 +103,6 @@ export default function ProductPage({params}:{params:Promise<{slug:string}>}){
     </div>
     <div className="detailInfo">
       <Link href="/catalog" className="back">← Каталог</Link>
-      <span className="eyebrow">{p.category}</span>
       <h1>{p.name}</h1>
       <div className="detailPrice">{formatPrice(p.price)}</div>
       
