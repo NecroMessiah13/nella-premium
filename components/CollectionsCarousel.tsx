@@ -39,7 +39,7 @@ export function CollectionsCarousel({ collections }: { collections: CollectionIt
       <div className="sectionTop collectionsTop">
         <div>
           <span className="eyebrow">КОЛЛЕКЦИИ</span>
-          <h2>Подборки Nella</h2>
+          <h2>Коллекции</h2>
         </div>
         <div className="carouselNav">
           <button className="carouselBtn" aria-label="Назад" onClick={() => scrollBy(-1)}>‹</button>
