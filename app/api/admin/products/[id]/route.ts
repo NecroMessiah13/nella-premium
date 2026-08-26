@@ -67,12 +67,21 @@ export async function PUT(
         }
       }
 
+      if (Array.isArray(b.collectionIds)) {
+        await tx.collectionProduct.deleteMany({ where: { productId } });
+        if (b.collectionIds.length)
+          await tx.collectionProduct.createMany({
+            data: b.collectionIds.map((cid: number) => ({ productId, collectionId: cid })),
+          });
+      }
+
       return tx.product.findUnique({
         where: { id: productId },
         include: {
           category: true,
           variants: true,
           images: { orderBy: { sortOrder: "asc" } },
+          collections: { include: { collection: true } },
         },
       });
     });

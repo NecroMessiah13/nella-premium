@@ -2,12 +2,13 @@ import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await requireAdmin().catch(() => null);
   if (!admin) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   try {
+    const { id } = await params;
     const collection = await prisma.collection.findUnique({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
       include: {
         products: { include: { product: true } },
         discount: true,
@@ -19,25 +20,24 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
 
     return NextResponse.json(collection);
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch collection' }, { status: 500 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await requireAdmin().catch(() => null);
   if (!admin) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   try {
+    const { id } = await params;
     const { name, slug, description, image, sortOrder, productIds, active } = await req.json();
-    const id = parseInt(params.id);
 
-    // Remove old products
     await prisma.collectionProduct.deleteMany({
-      where: { collectionId: id },
+      where: { collectionId: parseInt(id) },
     });
 
     const collection = await prisma.collection.update({
-      where: { id },
+      where: { id: parseInt(id) },
       data: {
         name,
         slug,
@@ -45,9 +45,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         image,
         sortOrder: sortOrder || 0,
         active: active ?? true,
-        products: {
-          create: (productIds || []).map((productId: number) => ({ productId })),
-        },
+        ...(productIds && productIds.length
+          ? { products: { create: productIds.map((productId: number) => ({ productId })) } }
+          : {}),
       },
       include: {
         products: { include: { product: true } },
@@ -61,16 +61,17 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await requireAdmin().catch(() => null);
   if (!admin) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   try {
+    const { id } = await params;
     await prisma.collection.delete({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete collection' }, { status: 500 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

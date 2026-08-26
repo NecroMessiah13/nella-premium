@@ -14,7 +14,7 @@ export function Header() {
         className="mobileMenu" 
         onClick={() => setOpen(!open)} 
         aria-label="Меню"
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1b19' }}
+        style={{ alignItems: 'center', justifyContent: 'center', color: '#1c1b19' }}
       >
         {open ? <CloseIcon size={24} /> : <MenuIcon size={24} />}
       </button>

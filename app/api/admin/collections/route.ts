@@ -33,9 +33,9 @@ export async function POST(req: NextRequest) {
         image,
         sortOrder: sortOrder || 0,
         active: active ?? true,
-        products: {
-          create: (productIds || []).map((productId: number) => ({ productId })),
-        },
+        ...(productIds && productIds.length
+          ? { products: { create: productIds.map((productId: number) => ({ productId })) } }
+          : {}),
       },
       include: {
         products: { include: { product: true } },

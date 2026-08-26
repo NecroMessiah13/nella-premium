@@ -2,17 +2,17 @@ import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await requireAdmin().catch(() => null);
   if (!admin) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   try {
+    const { id } = await params;
     const { code, description, type, value, maxUses, active, productId, collectionId, startsAt, expiresAt } = await req.json();
-    const id = parseInt(params.id);
 
     const discount = await prisma.discount.update({
-      where: { id },
+      where: { id: parseInt(id) },
       data: {
-        code: code.toUpperCase(),
+        code: (code || "").toUpperCase(),
         description,
         type,
         value,
@@ -35,16 +35,17 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await requireAdmin().catch(() => null);
   if (!admin) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   try {
+    const { id } = await params;
     await prisma.discount.delete({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete discount' }, { status: 500 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
