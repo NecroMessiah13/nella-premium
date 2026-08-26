@@ -93,7 +93,7 @@ export function ProductCard({product}:{product:Product}) {
       )}
     </Link>
     <div className="productMeta">
-      <div><Link href={`/product/${product.slug}`}><h3>{product.name}</h3></Link><span>{product.color}</span></div>
+      <div><span>{product.color}</span></div>
       <div className="price">{formatPrice(product.price)}</div>
     </div>
     <button className="quickAdd" onClick={handleAddToCart}>Добавить в корзину</button>
