@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 export type CollectionItem = {
   id: number;
@@ -16,6 +16,21 @@ export function CollectionsCarousel({ collections }: { collections: CollectionIt
   const scrollBy = (dir: number) => {
     trackRef.current?.scrollBy({ left: dir * 340, behavior: 'smooth' });
   };
+
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el || collections.length < 2) return;
+    const id = setInterval(() => {
+      if (el.matches(':hover')) return;
+      const max = el.scrollWidth - el.clientWidth;
+      if (el.scrollLeft >= max - 2) {
+        el.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        el.scrollBy({ left: 340, behavior: 'smooth' });
+      }
+    }, 4000);
+    return () => clearInterval(id);
+  }, [collections.length]);
 
   if (!collections.length) return null;
 
@@ -34,7 +49,7 @@ export function CollectionsCarousel({ collections }: { collections: CollectionIt
 
       <div className="collectionsTrack" ref={trackRef}>
         {collections.map((c) => (
-          <Link href={`/catalog?collection=${c.slug}`} className="collectionCard" key={c.id}>
+          <Link href={`/collection/${c.slug}`} className="collectionCard" key={c.id}>
             <div
               className="collectionCardPhoto"
               style={c.image ? { backgroundImage: `url(${c.image})` } : undefined}
