@@ -1,5 +1,5 @@
 "use client";
-import {useEffect,useState} from "react";
+import {useEffect,useState,useRef} from "react";
 
 const money=(n:number)=>new Intl.NumberFormat("ru-RU").format(n)+" ₽";
 const statuses=["NEW","PROCESSING","SHIPPED","DELIVERED","COMPLETED","CANCELLED"];
@@ -34,6 +34,8 @@ export default function Admin(){
   const [selectedCollections, setSelectedCollections] = useState<Set<number>>(new Set());
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState("");
+  const pickerBtnRef = useRef<any>(null);
+  const [pickerPos, setPickerPos] = useState<{top:number;left:number;width:number}|null>(null);
  
  const load=async()=>{
   const [p,o,c,cl,d]=await Promise.all([fetch("/api/admin/products"),fetch("/api/admin/orders"),fetch("/api/categories"),fetch("/api/admin/collections"),fetch("/api/admin/discounts")]);
@@ -57,6 +59,21 @@ export default function Admin(){
      setSelectedCollections(new Set(edit.collections?.map((cc:any)=>cc.collectionId)||[]));
    }
   },[edit,tab]);
+
+  useEffect(()=>{
+   if(!pickerOpen) return;
+   const place=()=>{
+     const r=pickerBtnRef.current?.getBoundingClientRect();
+     if(!r) return;
+     const dh=430;
+     const below=(r.bottom+dh<window.innerHeight)||r.top<dh;
+     setPickerPos({top: below?r.bottom+6:Math.max(8,r.top-dh), left:r.left, width:r.width});
+   };
+   place();
+   window.addEventListener("scroll",place,true);
+   window.addEventListener("resize",place);
+   return ()=>{window.removeEventListener("scroll",place,true);window.removeEventListener("resize",place);};
+  },[pickerOpen]);
 
  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
   if(!e.currentTarget.files) return;
@@ -187,12 +204,12 @@ export default function Admin(){
     </section>
     <form className="adminForm" onSubmit={save}><h2>{edit?edit.id?"Редактирование":"Новый товар":"Выберите товар"}</h2>{edit&&<><label>Название<input name="name" defaultValue={edit.name} required/></label><label>Slug<input name="slug" defaultValue={edit.slug} required/></label><label>Цена<input name="price" type="number" defaultValue={edit.price} required/></label><label>Цвет<input name="color" defaultValue={edit.color} required/></label><label>Тон карточки<input name="tone" defaultValue={edit.tone} required/></label><label>Категория<select name="categoryId" defaultValue={edit.categoryId}>{cats.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><label>Источник<input name="source" defaultValue={edit.source||""}/></label><label>Ссылка на источник<input name="sourceUrl" defaultValue={edit.sourceUrl||""}/></label><div style={{position:'relative',marginBottom:'15px'}}>
   <label style={{display:'block',marginBottom:'8px',fontSize:'11px',color:'var(--muted)'}}>Коллекции ({selectedCollections.size} выбрано)</label>
-  <button type="button" onClick={()=>setPickerOpen(o=>!o)} style={{display:'flex',justifyContent:'space-between',alignItems:'center',width:'100%',border:'1px solid var(--line)',background:'#fff',padding:'12px',borderRadius:'4px',cursor:'pointer',font:'13px "DM Sans",sans-serif',color:'#1c1b19'}}>
+  <button ref={pickerBtnRef} type="button" onClick={()=>{const r=pickerBtnRef.current?.getBoundingClientRect();if(r){const dh=430;const below=(r.bottom+dh<window.innerHeight)||r.top<dh;setPickerPos({top:below?r.bottom+6:Math.max(8,r.top-dh),left:r.left,width:r.width});}setPickerOpen(o=>!o);}} style={{display:'flex',justifyContent:'space-between',alignItems:'center',width:'100%',border:'1px solid var(--line)',background:'#fff',padding:'12px',borderRadius:'4px',cursor:'pointer',font:'13px "DM Sans",sans-serif',color:'#1c1b19'}}>
     <span>{selectedCollections.size?`${selectedCollections.size} коллекций выбрано`:"Выбрать коллекции"}</span>
     <span style={{color:'var(--muted)',fontSize:'12px'}}>{pickerOpen?"▲":"▾"}</span>
   </button>
   {pickerOpen&&<><div onClick={()=>setPickerOpen(false)} style={{position:'fixed',inset:0,zIndex:40}}/>
-  <div style={{position:'absolute',top:'100%',left:0,right:0,zIndex:50,marginTop:'6px',border:'1px solid var(--line)',borderRadius:'6px',background:'#fff',boxShadow:'0 20px 50px rgba(0,0,0,.18)',padding:'12px'}}>
+  <div style={{position:'fixed',top:pickerPos?pickerPos.top:0,left:pickerPos?pickerPos.left:0,width:pickerPos?pickerPos.width:'100%',zIndex:50,border:'1px solid var(--line)',borderRadius:'6px',background:'#fff',boxShadow:'0 20px 50px rgba(0,0,0,.18)',padding:'12px'}}>
     <input value={pickerQuery} onChange={(e)=>setPickerQuery(e.target.value)} placeholder="Поиск коллекций..." style={{display:'block',width:'100%',marginBottom:'10px',border:'1px solid var(--line)',padding:'10px',borderRadius:'4px',font:'13px "DM Sans",sans-serif'}}/>
     <div style={{maxHeight:'360px',overflowY:'auto'}}>
       {collections.filter((c:any)=>(c.name||"").toLowerCase().includes(pickerQuery.toLowerCase())).length===0
@@ -215,12 +232,12 @@ export default function Admin(){
     </section>
     <form className="adminForm" onSubmit={save}><h2>{edit?edit.id?"Редактирование коллекции":"Новая коллекция":"Выберите коллекцию"}</h2>{edit&&<><label>Название<input name="name" defaultValue={edit.name} required/></label><label>Slug<input name="slug" defaultValue={edit.slug} required/></label><label>Описание<textarea name="description" defaultValue={edit.description||""}/></label><label>Изображение<input name="image" defaultValue={edit.image||""} placeholder="https://...jpg"/></label>        <label>Порядок сортировки<input name="sortOrder" type="number" defaultValue={edit.sortOrder||0}/></label><label style={{display:'flex',alignItems:'center',gap:'8px',marginTop:'6px'}}><input type="checkbox" name="active" defaultChecked={edit.active!==false}/>Активна (показывать на сайте)</label><div style={{position:'relative',marginBottom:'15px'}}>
   <label style={{display:'block',marginBottom:'8px',fontSize:'11px',color:'var(--muted)'}}>Товары в коллекции ({selectedProducts.size} выбрано)</label>
-  <button type="button" onClick={()=>setPickerOpen(o=>!o)} style={{display:'flex',justifyContent:'space-between',alignItems:'center',width:'100%',border:'1px solid var(--line)',background:'#fff',padding:'12px',borderRadius:'4px',cursor:'pointer',font:'13px "DM Sans",sans-serif',color:'#1c1b19'}}>
+  <button ref={pickerBtnRef} type="button" onClick={()=>{const r=pickerBtnRef.current?.getBoundingClientRect();if(r){const dh=430;const below=(r.bottom+dh<window.innerHeight)||r.top<dh;setPickerPos({top:below?r.bottom+6:Math.max(8,r.top-dh),left:r.left,width:r.width});}setPickerOpen(o=>!o);}} style={{display:'flex',justifyContent:'space-between',alignItems:'center',width:'100%',border:'1px solid var(--line)',background:'#fff',padding:'12px',borderRadius:'4px',cursor:'pointer',font:'13px "DM Sans",sans-serif',color:'#1c1b19'}}>
     <span>{selectedProducts.size?`${selectedProducts.size} товар(ов) выбрано`:"Выбрать товары"}</span>
     <span style={{color:'var(--muted)',fontSize:'12px'}}>{pickerOpen?"▲":"▾"}</span>
   </button>
   {pickerOpen&&<><div onClick={()=>setPickerOpen(false)} style={{position:'fixed',inset:0,zIndex:40}}/>
-  <div style={{position:'absolute',top:'100%',left:0,right:0,zIndex:50,marginTop:'6px',border:'1px solid var(--line)',borderRadius:'6px',background:'#fff',boxShadow:'0 20px 50px rgba(0,0,0,.18)',padding:'12px'}}>
+  <div style={{position:'fixed',top:pickerPos?pickerPos.top:0,left:pickerPos?pickerPos.left:0,width:pickerPos?pickerPos.width:'100%',zIndex:50,border:'1px solid var(--line)',borderRadius:'6px',background:'#fff',boxShadow:'0 20px 50px rgba(0,0,0,.18)',padding:'12px'}}>
     <input value={pickerQuery} onChange={(e)=>setPickerQuery(e.target.value)} placeholder="Поиск товаров..." style={{display:'block',width:'100%',marginBottom:'10px',border:'1px solid var(--line)',padding:'10px',borderRadius:'4px',font:'13px "DM Sans",sans-serif'}}/>
     <div style={{maxHeight:'360px',overflowY:'auto'}}>
       {products.filter((p:any)=>(p.name+" "+(p.color||"")).toLowerCase().includes(pickerQuery.toLowerCase())).length===0
