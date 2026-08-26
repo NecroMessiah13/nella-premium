@@ -42,7 +42,7 @@ export function CartProvider({children}: {children: React.ReactNode}) {
     });
   };
 
-  const remove = (slug: string) => setItems(a => a.flatMap(x => x.slug === slug ? (x.qty > 1 ? [{...x, qty: x.qty - 1}] : []) : [x]));
+  const remove = (slug: string, size: string) => setItems(a => a.flatMap(x => (x.slug === slug && x.size === size) ? (x.qty > 1 ? [{...x, qty: x.qty - 1}] : []) : [x]));
 
   return (
     <C.Provider value={{

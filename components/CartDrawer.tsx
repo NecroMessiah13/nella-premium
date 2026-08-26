@@ -35,7 +35,7 @@ export function CartDrawer() {
                   <small>{item.size} · {item.color}</small>
                   <p style={{fontSize: '12px', color: '#999', margin: '4px 0'}}>{item.qty} шт.</p>
                   <button 
-                    onClick={() => remove(item.slug)}
+                    onClick={() => remove(item.slug, item.size)}
                     style={{border: 0, background: 'none', textDecoration: 'underline', padding: 0, cursor: 'pointer', fontSize: '11px', color: '#999'}}
                   >
                     Удалить
