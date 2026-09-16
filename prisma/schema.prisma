@@ -103,12 +103,43 @@ model User {
   bonusBalance Int       @default(0)
 
   sessions     Session[]
+  oauthAccounts OAuthAccount[]
   wishlists    Wishlist[]
   reviews      Review[]
   productViews ProductView[]
   orders       Order[]
+  addresses    Address[]
+  adminLogs    AdminLog[]
+  customerLogs CustomerLog[]
 
   createdAt DateTime @default(now())
+}
+
+model Address {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  label      String   @default("Дом")
+  fullText   String
+  isDefault  Boolean  @default(false)
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+}
+
+model OAuthAccount {
+  id         Int      @id @default(autoincrement())
+  provider   String
+  providerId String
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([provider, providerId])
+  @@index([userId])
 }
 
 model Session {
@@ -139,6 +170,10 @@ model Order {
   deliveryCost Int @default(0)
   trackingNumber String?
   bonusEarned Int @default(0)
+
+  discountAmount Int @default(0)
+  promoCode String?
+  guestId String?
 
   userId Int?
   user   User? @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -204,15 +239,17 @@ model Review {
 model ProductView {
   id Int @id @default(autoincrement())
 
-  userId    Int
+  userId    Int?
   productId Int
+  guestId   String?
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   viewedAt DateTime @default(now())
 
   @@index([userId])
+  @@index([guestId])
   @@index([productId])
 }
 
@@ -287,4 +324,45 @@ model DiscountCode {
   updatedAt    DateTime  @updatedAt
 
   @@index([code])
+}
+
+model SiteSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model CustomerLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  guestId   String?
+  email     String?
+  action    String
+  entity    String
+  entityId  String?
+  details   String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([guestId])
+  @@index([createdAt])
+}
+
+model AdminLog {
+  id         Int      @id @default(autoincrement())
+  adminId    Int
+  adminEmail String
+  action     String
+  entity     String
+  entityId   String?
+  details    String?
+  createdAt  DateTime @default(now())
+
+  admin User @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([entity])
+  @@index([createdAt])
 }

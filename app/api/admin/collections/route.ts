@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
+import { adminLog } from '@/lib/adminLog';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET() {
@@ -42,6 +43,8 @@ export async function POST(req: NextRequest) {
         discount: true,
       },
     });
+
+    await adminLog(admin, "CREATE", "collection", collection.id, { name: collection.name });
 
     return NextResponse.json(collection);
   } catch (error: any) {

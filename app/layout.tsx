@@ -1,4 +1,5 @@
 import "./globals.css";
+import "./account.css";
 import { Header } from "@/components/Header";
 import { CartProvider } from "@/components/Cart";
 import { CartDrawer } from "@/components/CartDrawer";

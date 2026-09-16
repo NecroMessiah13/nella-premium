@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
+import { adminLog } from '@/lib/adminLog';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -29,6 +30,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       },
     });
 
+    await adminLog(admin, "UPDATE", "discount", id, { code: discount.code });
+
     return NextResponse.json(discount);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 });
@@ -43,6 +46,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     await prisma.discount.delete({
       where: { id: parseInt(id) },
     });
+
+    await adminLog(admin, "DELETE", "discount", id);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

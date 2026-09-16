@@ -106,6 +106,47 @@ export async function loginUser(input: {
   return { id: u.id, email: u.email, role: u.role, name: u.name };
 }
 
+export async function oauthLogin(input: {
+  provider: string;
+  providerId: string;
+  email: string;
+  name?: string;
+}): Promise<SessionUser> {
+  const email = input.email.trim().toLowerCase();
+  const existing = await prisma.oAuthAccount.findUnique({
+    where: { provider_providerId: { provider: input.provider, providerId: input.providerId } },
+    include: { user: true },
+  });
+  if (existing) {
+    if (existing.user.role !== "USER" && existing.user.role !== "ADMIN") {
+      throw new Error("Учётная запись заблокирована");
+    }
+    await createSession(existing.user.id);
+    await mergeGuestWishlistToUser(existing.user.id);
+    return { id: existing.user.id, email: existing.user.email, role: existing.user.role, name: existing.user.name };
+  }
+
+  let user = email ? await prisma.user.findUnique({ where: { email } }) : null;
+  if (!user) {
+    const passwordHash = await bcrypt.hash(Math.random().toString(36).slice(2) + Date.now(), 12);
+    user = await prisma.user.create({
+      data: {
+        email: email || `${input.provider}:${input.providerId}@oauth.local`,
+        passwordHash,
+        name: input.name?.trim() || null,
+        role: "USER",
+      },
+    });
+  }
+
+  await prisma.oAuthAccount.create({
+    data: { provider: input.provider, providerId: input.providerId, userId: user.id },
+  });
+  await createSession(user.id);
+  await mergeGuestWishlistToUser(user.id);
+  return { id: user.id, email: user.email, role: user.role, name: user.name };
+}
+
 export async function adminLogin(email: string, password: string) {
   const u = await prisma.user.findUnique({ where: { email } });
   if (!u || u.role !== "ADMIN" || !(await bcrypt.compare(password, u.passwordHash))) return null;

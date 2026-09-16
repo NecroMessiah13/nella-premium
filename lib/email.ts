@@ -116,6 +116,11 @@ export const emailTemplates = {
                 ? `<p><span class="label">Стоимость доставки:</span> ${(order.deliveryCost / 100).toFixed(2)} ₽</p>`
                 : ''
             }
+            ${
+              order.discountAmount > 0
+                ? `<p><span class="label">Скидка:</span> <strong style="color:#2e7d32">−${(order.discountAmount / 100).toFixed(2)} ₽</strong>${order.promoCode ? ` (${order.promoCode})` : ''}</p>`
+                : ''
+            }
             <p class="total">Итого: ${(order.total / 100).toFixed(2)} ₽</p>
           </div>
 
@@ -256,7 +261,13 @@ export const emailTemplates = {
     </html>
   `,
 
-  deliveryConfirmation: (order: any) => `
+  deliveryConfirmation: (order: any) => {
+    const isPickup = order.deliveryMethod === 'PICKUP';
+    const headline = isPickup ? '📦 Товар на пункте выдачи!' : '✓ Заказ доставлен!';
+    const sub = isPickup
+      ? `Ваш заказ #${order.id} прибыл на пункт выдачи и ожидает вас.`
+      : `Ваш заказ #${order.id} успешно доставлен!`;
+    return `
     <!DOCTYPE html>
     <html>
     <head>
@@ -273,17 +284,21 @@ export const emailTemplates = {
     <body>
       <div class="container">
         <div class="header">
-          <h1>✓ Заказ доставлен!</h1>
+          <h1>${headline}</h1>
         </div>
         
         <div class="content">
           <p>Спасибо за покупку, <strong>${order.customerName}</strong>!</p>
           
-          <p>Ваш заказ #${order.id} успешно доставлен!</p>
+          <p>${sub}</p>
 
           <h3>Следующие шаги</h3>
           <ul>
-            <li>Проверьте целостность посылки</li>
+            ${
+              isPickup
+                ? `<li>Заберите заказ в пункте выдачи в течение рабочих часов</li><li>Возьмите с собой паспорт или код подтверждения</li>`
+                : `<li>Проверьте целостность посылки</li>`
+            }
             <li>Примерьте товары в течение 14 дней</li>
             <li>Если что-то не подходит, вы можете вернуть товар</li>
             <li>Оставьте отзыв о товарах и нашем сервисе</li>
@@ -294,7 +309,7 @@ export const emailTemplates = {
           </p>
 
           <p style="margin-top: 20px;">
-            <a href="${process.env.APP_URL}/orders/${order.id}" style="display: inline-block; padding: 12px 20px; background: #10b981; color: #fff; text-decoration: none; border-radius: 4px;">Оставить отзыв</a>
+            <a href="${process.env.APP_URL}/orders/${order.id}" style="display: inline-block; padding: 12px 20px; background: #10b981; color: #fff; text-decoration: none; border-radius: 4px;">Статус заказа</a>
           </p>
 
           <p style="margin-top: 30px; color: #666; font-size: 12px;">
@@ -310,7 +325,8 @@ export const emailTemplates = {
       </div>
     </body>
     </html>
-  `,
+  `;
+  },
 };
 
 // Вспомогательные функции

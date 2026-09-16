@@ -24,7 +24,11 @@ services:
       - "8025:8025"
 
   app:
-    image: node:22-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        DATABASE_URL: "postgresql://nella:${POSTGRES_PASSWORD:-nella}@postgres:5432/nella?schema=public"
     container_name: nella-app
     restart: unless-stopped
     working_dir: /app
@@ -36,7 +40,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}
       NODE_ENV: "production"
       APP_URL: ${APP_URL:-http://localhost:3000}
-      COOKIE_SECURE: "false"
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
       YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID:-}
       YOOKASSA_SECRET_KEY: ${YOOKASSA_SECRET_KEY:-}
       YOOKASSA_RETURN_URL: ${YOOKASSA_RETURN_URL:-http://localhost:3000/payment/success}
@@ -49,6 +53,12 @@ services:
       CDEK_API_KEY: ${CDEK_API_KEY:-}
       CDEK_ACCOUNT: ${CDEK_ACCOUNT:-}
       OZON_API_KEY: ${OZON_API_KEY:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      APPLE_TEAM_ID: ${APPLE_TEAM_ID:-}
+      APPLE_CLIENT_ID: ${APPLE_CLIENT_ID:-}
+      APPLE_KEY_ID: ${APPLE_KEY_ID:-}
+      APPLE_PRIVATE_KEY: ${APPLE_PRIVATE_KEY:-}
     env_file:
       - .env
     depends_on:
@@ -56,10 +66,6 @@ services:
         condition: service_healthy
       mailhog:
         condition: service_started
-    volumes:
-      - ./:/app
-      - /app/node_modules
-    command: sh -c "npm ci && npm run db:generate && npm run build && npm start"
 
 volumes:
   nella_postgres_data:

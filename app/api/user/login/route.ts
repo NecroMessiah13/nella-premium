@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { loginUser } from "@/lib/auth";
+import { customerLog } from "@/lib/customerLog";
 
 export async function POST(r: Request) {
   try {
@@ -7,6 +8,14 @@ export async function POST(r: Request) {
     const user = await loginUser({
       email: String(b.email || ""),
       password: String(b.password || ""),
+    });
+    await customerLog({
+      userId: user.id,
+      email: user.email,
+      action: "LOGIN",
+      entity: "user",
+      entityId: user.id,
+      withGuest: true,
     });
     return NextResponse.json({ user });
   } catch (e) {

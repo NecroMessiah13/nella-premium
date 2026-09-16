@@ -28,3 +28,25 @@ routes-manifest.json
 trace
 trace-build
 tsconfig.tsbuildinfo
+
+# Временные тест-скрипты и проверки (в корне репозитория)
+/*.cjs
+
+# Временные отчёты и аналитика (не документация)
+/ADMIN_PANEL_ANALYSIS.md
+/ADMIN_PANEL_READY.md
+/DETAILED_ISSUES_ANALYSIS.md
+/DOCUMENTATION_MAP.md
+/FINAL_TEST_REPORT.txt
+/FULL_TEST_SUMMARY.txt
+/HONEST_REPORT.md
+/ISSUES_SUMMARY.md
+/LOGGING_SETUP.md
+/LOGGING_VISUAL.md
+/QUICK_ISSUES_CHECKLIST.md
+/README_ISSUES.md
+/TESTING_SUMMARY.md
+/TEST_REPORT.md
+/TEST_REPORT_DETAILED.json
+/VISUAL_REPORT.txt
+/WHAT_IS_LOGGING.md

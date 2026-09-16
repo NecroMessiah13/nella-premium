@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
+import { adminLog } from "@/lib/adminLog";
 
 export async function PUT(
   req: Request,
@@ -86,6 +87,8 @@ export async function PUT(
       });
     });
 
+    await adminLog(admin, "UPDATE", "product", productId, { name: p?.name ?? b.name, slug: p?.slug ?? b.slug });
+
     return NextResponse.json(p);
   } catch (e) {
     console.error("Update product error:", e);
@@ -105,6 +108,7 @@ export async function DELETE(
   try {
     const { id } = await params;
     await prisma.product.delete({ where: { id: Number(id) } });
+    await adminLog(admin, "DELETE", "product", id);
     return NextResponse.json({ ok: true });
   } catch (e) {
     return NextResponse.json(

@@ -1,12 +1,20 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCart } from "./Cart";
-import { SearchIcon, HeartIcon, CartIcon, MenuIcon, CloseIcon } from "./Icons";
+import { SearchIcon, HeartIcon, CartIcon, MenuIcon, CloseIcon, UserIcon } from "./Icons";
 
 export function Header() {
   const [open, setOpen] = useState(false);
+  const [user, setUser] = useState<{ email: string } | null>(null);
   const { count } = useCart();
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then(r => (r.ok ? r.json() : { user: null }))
+      .then(d => setUser(d.user))
+      .catch(() => setUser(null));
+  }, []);
 
   return (
     <header className="siteHeader">
@@ -30,12 +38,16 @@ export function Header() {
       </nav>
       
       <div className="headerActions">
-        <button aria-label="Поиск" title="Поиск" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1b19' }}>
+        <Link href="/catalog" aria-label="Поиск" title="Поиск" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1b19', textDecoration: 'none' }}>
           <SearchIcon size={20} />
-        </button>
-        <button aria-label="Избранное" title="Избранное" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1b19' }}>
+        </Link>
+        <Link href="/wishlist" aria-label="Избранное" title="Избранное" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1b19', textDecoration: 'none' }}>
           <HeartIcon size={20} />
-        </button>
+        </Link>
+        <Link href="/account" className="cartIcon userIcon" title={user ? "Личный кабинет" : "Вход"} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1b19', textDecoration: 'none' }}>
+          <UserIcon size={20} />
+          {user && <i className="userDot" />}
+        </Link>
         <Link href="/cart" className="cartIcon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1b19', textDecoration: 'none' }}>
           <CartIcon size={20} count={count} />
         </Link>

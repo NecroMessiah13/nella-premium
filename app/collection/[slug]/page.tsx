@@ -2,6 +2,8 @@ import Link from 'next/link';
 import {prisma} from '@/lib/prisma';
 import {ProductCard} from '@/components/ProductCard';
 
+export const dynamic = 'force-dynamic';
+
 export default async function CollectionPage({params}:{params:Promise<{slug:string}>}){
   const {slug} = await params;
   const collection = await prisma.collection.findFirst({

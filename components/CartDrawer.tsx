@@ -4,7 +4,7 @@ import { useCart } from './Cart';
 import { formatPrice } from '@/lib/products';
 
 export function CartDrawer() {
-  const { items, total, remove, showDrawer, setShowDrawer } = useCart();
+  const { items, total, increment, decrement, removeLine, showDrawer, setShowDrawer } = useCart();
 
   return (
     <>
@@ -12,7 +12,7 @@ export function CartDrawer() {
       <div className={`cartDrawer ${showDrawer ? 'show' : ''}`}>
         <div className="drawerHead">
           <h2>Корзина</h2>
-          <button onClick={() => setShowDrawer(false)}>✕</button>
+          <button onClick={() => setShowDrawer(false)} style={{minWidth:'44px',minHeight:'44px',display:'flex',alignItems:'center',justifyContent:'center',border:'0',background:'none',fontSize:'20px',cursor:'pointer'}}>✕</button>
         </div>
 
         <div className="drawerItems">
@@ -33,9 +33,13 @@ export function CartDrawer() {
                 <div>
                   <b>{item.name}</b>
                   <small>{item.size} · {item.color}</small>
-                  <p style={{fontSize: '12px', color: '#999', margin: '4px 0'}}>{item.qty} шт.</p>
-                  <button 
-                    onClick={() => remove(item.slug, item.size)}
+                  <div style={{display: 'flex', alignItems: 'center', gap: '8px', margin: '4px 0'}}>
+                    <button onClick={() => decrement(item.slug, item.size)} style={{border: '1px solid #ddd', background: '#fff', width: '36px', height: '36px', lineHeight: '1', cursor: 'pointer', fontSize: '16px'}}>−</button>
+                    <span style={{fontSize: '12px'}}>{item.qty}</span>
+                    <button onClick={() => increment(item.slug, item.size)} style={{border: '1px solid #ddd', background: '#fff', width: '36px', height: '36px', lineHeight: '1', cursor: 'pointer', fontSize: '16px'}}>+</button>
+                  </div>
+                  <button
+                    onClick={() => removeLine(item.slug, item.size)}
                     style={{border: 0, background: 'none', textDecoration: 'underline', padding: 0, cursor: 'pointer', fontSize: '11px', color: '#999'}}
                   >
                     Удалить

@@ -1,7 +1,16 @@
-import {NextResponse} from 'next/server';
-import {prisma} from '@/lib/prisma';
-import {sendEmail, emailTemplates} from '@/lib/email';
-import {currentUser} from '@/lib/auth';
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { sendEmail, emailTemplates } from '@/lib/email';
+import { currentUser, getOrCreateGuestId } from '@/lib/auth';
+import { lookupPromoCode, promoAmount, incrementPromoUse } from '@/lib/promocode';
+import { customerLog } from '@/lib/customerLog';
+
+function computeDiscountPrice(price: number, d: { type: string; value: number } | null | undefined): number {
+  if (!d) return price;
+  if (d.type === 'PERCENT') return Math.max(0, Math.round(price * (100 - d.value) / 100));
+  if (d.type === 'FIXED') return Math.max(0, price - d.value);
+  return price;
+}
 
 export async function POST(r: Request) {
   try {
@@ -17,21 +26,50 @@ export async function POST(r: Request) {
     const ids = b.items.map((x: any) => Number(x.productId));
     const ps = await prisma.product.findMany({
       where: {id: {in: ids}},
-      include: {variants: true, category: true}
+      include: {variants: true, category: true, discount: true}
     });
 
     if (ps.length !== new Set(ids).size) {
       throw new Error('Товар не найден');
     }
 
+    // База товаров по текущим ценам (без скидки)
     const baseTotal = b.items.reduce(
       (s: number, x: any) =>
         s + (ps.find(p => p.id === Number(x.productId))?.price || 0) * Number(x.quantity),
       0
     );
 
+    // Скидки на товары (постоянные, активные)
+    const isActive = (d: { active: boolean; startsAt: Date | null; expiresAt: Date | null }) =>
+      d.active && (!d.startsAt || d.startsAt <= new Date()) && (!d.expiresAt || d.expiresAt >= new Date());
+
+    let itemsTotalAfterDiscount = b.items.reduce((s: number, x: any) => {
+      const p = ps.find(pp => pp.id === Number(x.productId));
+      const d = p?.discount && isActive(p.discount as any) ? p.discount : null;
+      return s + computeDiscountPrice(p?.price || 0, d as any) * Number(x.quantity);
+    }, 0);
+
+    // Промокод (DiscountCode или универсальный Discount)
+    let promoDiscount = 0;
+    const promoCode = typeof b.promoCode === 'string' ? b.promoCode.trim().toUpperCase() || null : null;
+    if (promoCode) {
+      const dc = await lookupPromoCode(promoCode);
+      if (!dc) {
+        return NextResponse.json(
+          { error: 'Промокод недействителен' },
+          { status: 400 }
+        );
+      }
+      promoDiscount = promoAmount(dc, itemsTotalAfterDiscount);
+      await incrementPromoUse(dc);
+    }
+
     const deliveryCost = Math.max(0, Number(b.deliveryCost || 0));
-    const total = baseTotal + deliveryCost;
+    const discountTotal = (baseTotal - itemsTotalAfterDiscount) + promoDiscount;
+    const total = baseTotal + deliveryCost - discountTotal;
+
+    const guestId = await getOrCreateGuestId();
 
     const order = await prisma.$transaction(async tx => {
       // Проверяем остатки
@@ -61,6 +99,9 @@ export async function POST(r: Request) {
           deliveryMethod: b.deliveryMethod || 'COURIER',
           deliveryCost: deliveryCost,
           total: total,
+          discountAmount: discountTotal,
+          promoCode: promoCode,
+          guestId,
           items: {
             create: b.items.map((x: any) => {
               const p = ps.find(p => p.id === Number(x.productId))!;
@@ -105,6 +146,16 @@ export async function POST(r: Request) {
         data: { userId: u.id },
       });
     }
+
+    void customerLog({
+      userId: u?.id ?? null,
+      email: u?.email ?? b.email ?? null,
+      action: "ORDER_CREATE",
+      entity: "order",
+      entityId: order.id,
+      details: { total, items: b.items.length, promoCode, customerName: b.customerName },
+      withGuest: !u,
+    });
 
     // Отправляем email об оформлении заказа (асинхронно, без ожидания)
     try {

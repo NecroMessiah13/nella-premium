@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { currentUser } from '@/lib/auth';
 
 export async function GET(
   req: NextRequest,
@@ -51,6 +52,14 @@ export async function POST(
     const { slug } = await params;
     const { rating, comment } = await req.json();
 
+    const user = await currentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Войдите, чтобы оставить отзыв' },
+        { status: 401 }
+      );
+    }
+
     if (!rating || rating < 1 || rating > 5) {
       return NextResponse.json(
         { error: 'Рейтинг должен быть от 1 до 5' },
@@ -63,12 +72,9 @@ export async function POST(
       return NextResponse.json({ error: 'Товар не найден' }, { status: 404 });
     }
 
-    // Для простоты используем фиксированный userId (в реальном приложении проверять auth)
-    const userId = 1; // Анонимный пользователь
-
     const review = await prisma.review.create({
       data: {
-        userId,
+        userId: user.id,
         productId: product.id,
         rating,
         comment: comment || null
