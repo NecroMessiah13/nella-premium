@@ -996,6 +996,10 @@ const PUBLIC_ROOT = path.join(process.cwd(), 'public');
 const IMG_DIR_REL = 'products/uds';
 
 async function download(url: string, filePath: string): Promise<boolean> {
+  if (fs.existsSync(filePath)) {
+    const st = fs.statSync(filePath);
+    if (st.size > 0) return true;
+  }
   try {
     const res = await fetch(url);
     if (!res.ok) return false;

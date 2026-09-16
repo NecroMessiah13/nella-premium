@@ -15,14 +15,6 @@ services:
       timeout: 5s
       retries: 5
 
-  mailhog:
-    image: mailhog/mailhog:latest
-    container_name: nella-mailhog
-    restart: unless-stopped
-    ports:
-      - "1025:1025"
-      - "8025:8025"
-
   app:
     build:
       context: .
@@ -44,11 +36,11 @@ services:
       YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID:-}
       YOOKASSA_SECRET_KEY: ${YOOKASSA_SECRET_KEY:-}
       YOOKASSA_RETURN_URL: ${YOOKASSA_RETURN_URL:-http://localhost:3000/payment/success}
-      SMTP_HOST: ${SMTP_HOST:-mailhog}
-      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_HOST: ${SMTP_HOST:-smtp.timeweb.ru}
+      SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      SMTP_FROM: ${SMTP_FROM:-info@nella.premium}
+      SMTP_FROM: ${SMTP_FROM:-no-reply@nellapremium.ru}
       SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Nella Premium}
       CDEK_API_KEY: ${CDEK_API_KEY:-}
       CDEK_ACCOUNT: ${CDEK_ACCOUNT:-}
@@ -64,8 +56,22 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      mailhog:
-        condition: service_started
+
+  web:
+    image: caddy:2-alpine
+    container_name: nella-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
 
 volumes:
   nella_postgres_data:
+  caddy_data:
+  caddy_config:
