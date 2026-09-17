@@ -8,7 +8,7 @@ const shortNum=(n:number)=>{if(n>=1000000)return (n/1000000).toFixed(1)+"М";if(
 const shortDate=(iso:string)=>{const d=iso?new Date(iso+"T00:00:00"):null;return d?d.toLocaleDateString("ru-RU",{day:"numeric",month:"short"}):""};
 const statuses=["NEW","PROCESSING","SHIPPED","DELIVERED","COMPLETED","CANCELLED"];
 const payStatuses=["PENDING","PAID","FAILED","REFUNDED","CANCELLED"];
-const deliveryLabels:any={COURIER:"Курьер",PICKUP:"Самовывоз",MAIL:"Почта"};
+const deliveryLabels:any={COURIER:"Курьер",PICKUP:"Самовывоз",MAIL:"Почта",CDEK:"СДЭК",OZON:"Ozon"};
 const payLabelsForDelta:any={PENDING:"Ожидание",PAID:"Оплачен",FAILED:"Ошибка",REFUNDED:"Возврат",CANCELLED:"Отменён"};
 
 const statusLabels = {
@@ -342,7 +342,7 @@ export default function Admin(){
         <section className="statsCard">
           <h3>Способ доставки</h3>
           <div className="deltaLegend">
-            {["COURIER","PICKUP","MAIL"].map(s=><div className="deltaRow" key={s}><span>{deliveryLabels[s]||s}</span><div className="deltaTrack"><div className="deltaFill" style={{width: `${(stats.byDelivery?.[s]||0)/Math.max(1,stats.orders?.total||1)*100}%`}}/></div><b>{stats.byDelivery?.[s]||0}</b></div>)}
+            {["COURIER","PICKUP","MAIL","CDEK","OZON"].map(s=><div className="deltaRow" key={s}><span>{deliveryLabels[s]||s}</span><div className="deltaTrack"><div className="deltaFill" style={{width: `${(stats.byDelivery?.[s]||0)/Math.max(1,stats.orders?.total||1)*100}%`}}/></div><b>{stats.byDelivery?.[s]||0}</b></div>)}
           </div>
         </section>
       </div>

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createCDEKOrder } from '@/lib/cdek';
-import { createOzonShipment } from '@/lib/ozon';
 import { sendEmail, emailTemplates } from '@/lib/email';
 import { currentUser } from '@/lib/auth';
 import crypto from 'crypto';
@@ -67,17 +66,11 @@ export async function POST(request: Request) {
         break;
 
       case 'OZON':
-        try {
-          const ozonResult = await createOzonShipment(Number(orderId), order);
-          trackingNumber = ozonResult.trackingNumber || trackingNumber;
-          carrierData = ozonResult;
-        } catch (ozonError: any) {
-          console.error('Ozon error:', ozonError);
-          return NextResponse.json(
-            { error: 'Ozon delivery is not configured or failed: ' + (ozonError?.message || 'unknown error') },
-            { status: 502 }
-          );
-        }
+        // Доставка через Ozon (оформляется после подтверждения заказа)
+        carrierData = {
+          carrier: 'OZON',
+          status: 'assigned'
+        };
         break;
 
       case 'COURIER':

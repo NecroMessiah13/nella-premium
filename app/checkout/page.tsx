@@ -21,7 +21,7 @@ type Profile = {
 };
 
 const DELIVERY_METHODS = [
-  { id: 'COURIER', name: 'Курьер', cost: 0, desc: 'Бесплатная доставка по России, 1-5 дней' },
+  { id: 'OZON', name: 'Ozon', cost: 0, desc: 'Бесплатная доставка Ozon по России, 1-5 дней' },
   { id: 'PICKUP', name: 'Самовывоз', cost: 0, desc: 'Пункт выдачи, город Георгиевск' },
   { id: 'MAIL', name: 'Почта России', cost: 300, desc: '5-7 рабочих дней' },
   { id: 'CDEK', name: 'СДЭК', cost: 0, desc: 'Расчёт по адресу получателя' }
@@ -67,7 +67,7 @@ export default function CheckoutPage() {
     email: '',
     phone: '',
     address: '',
-    deliveryMethod: 'COURIER'
+    deliveryMethod: 'OZON'
   });
 
   const selectedDelivery = DELIVERY_METHODS.find(d => d.id === formData.deliveryMethod) || DELIVERY_METHODS[0];
@@ -87,7 +87,7 @@ export default function CheckoutPage() {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email.trim())) e.email = 'Введите корректный email';
     const phoneDigits = d.phone.replace(/[^\d+]/g, '');
     if (!/^\+?\d{10,15}$/.test(phoneDigits)) e.phone = 'Введите корректный телефон';
-    if ((d.deliveryMethod === 'COURIER' || d.deliveryMethod === 'MAIL' || d.deliveryMethod === 'CDEK') && !d.address.trim()) e.address = 'Укажите адрес для доставки';
+    if ((d.deliveryMethod === 'OZON' || d.deliveryMethod === 'MAIL' || d.deliveryMethod === 'CDEK') && !d.address.trim()) e.address = 'Укажите адрес для доставки';
     return e;
   };
 
@@ -528,7 +528,7 @@ export default function CheckoutPage() {
           <div className="checkoutInfo">
             <h3>Информация о доставке</h3>
             <ul>
-              <li>Бесплатная доставка курьером по России</li>
+              <li>Бесплатная доставка Ozon по России</li>
               <li>Бесплатная примерка в течение 14 дней</li>
               <li>Полная гарантия качества</li>
               <li>Отслеживание заказа в реальном времени</li>

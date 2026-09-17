@@ -16,12 +16,13 @@ function letters(n: number): string {
   return s;
 }
 
-export type TrackingCarrier = "PICKUP" | "COURIER" | "MAIL";
+export type TrackingCarrier = "PICKUP" | "COURIER" | "MAIL" | "OZON";
 
 // Форматы трек-номеров по способу доставки:
 // - MAIL    — Почта России: 2 буквы + 9 цифр + 2 буквы (RU123456789RU)
 // - COURIER — курьер/СДЭК: 10 цифр
 // - PICKUP  — код выдачи самовывоза: PVZ-XXXXXX
+// - OZON    — Ozon: 10 цифр
 export function generateTrackingNumber(deliveryMethod?: TrackingCarrier | string): string {
   switch ((deliveryMethod as string) || "COURIER") {
     case "MAIL":
@@ -29,6 +30,7 @@ export function generateTrackingNumber(deliveryMethod?: TrackingCarrier | string
     case "PICKUP":
       return `PVZ-${digits(6)}${letters(2)}`;
     case "COURIER":
+    case "OZON":
     default:
       return digits(10);
   }

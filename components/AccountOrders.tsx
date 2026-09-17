@@ -42,6 +42,8 @@ const DELIVERY_LABEL: Record<string, string> = {
   COURIER: "Курьер",
   PICKUP: "Самовывоз",
   MAIL: "Почта",
+  CDEK: "СДЭК",
+  OZON: "Ozon",
 };
 
 const ORDER_BADGE: Record<string, string> = {
