@@ -29,7 +29,7 @@ const payStatusLabels = {
 };
 
 export default function Admin(){
- const [tab,setTab]=useState("dashboard"),[products,setProducts]=useState<any[]>([]),[orders,setOrders]=useState<any[]>([]),[cats,setCats]=useState<any[]>([]),[collections,setCollections]=useState<any[]>([]),[discounts,setDiscounts]=useState<any[]>([]),[stats,setStats]=useState<any>(null),[edit,setEdit]=useState<any>(null),[msg,setMsg]=useState("");
+ const [tab,setTab]=useState("dashboard"),[products,setProducts]=useState<any[]>([]),[orders,setOrders]=useState<any[]>([]),[cats,setCats]=useState<any[]>([]),[collections,setCollections]=useState<any[]>([]),[discounts,setDiscounts]=useState<any[]>([]),[promos,setPromos]=useState<any[]>([]),[stats,setStats]=useState<any>(null),[edit,setEdit]=useState<any>(null),[msg,setMsg]=useState("");
  const [logs,setLogs]=useState<any[]>([]);
  const [adminLogs,setAdminLogs]=useState<any[]>([]);
  const [selectedOrder, setSelectedOrder] = useState<any>(null);
@@ -47,13 +47,14 @@ export default function Admin(){
   const [hero, setHero] = useState<any>(null);
  
  const load=async()=>{
-  const [p,o,c,cl,d,st,se,lg,alg]=await Promise.all([fetch("/api/admin/products"),fetch("/api/admin/orders"),fetch("/api/categories"),fetch("/api/admin/collections"),fetch("/api/admin/discounts"),fetch("/api/admin/stats"),fetch("/api/admin/settings"),fetch("/api/admin/customer-logs"),fetch("/api/admin/logs")]);
+  const [p,o,c,cl,d,pr,st,se,lg,alg]=await Promise.all([fetch("/api/admin/products"),fetch("/api/admin/orders"),fetch("/api/categories"),fetch("/api/admin/collections"),fetch("/api/admin/discounts"),fetch("/api/admin/promocodes"),fetch("/api/admin/stats"),fetch("/api/admin/settings"),fetch("/api/admin/customer-logs"),fetch("/api/admin/logs")]);
   if(p.status===401){location.href="/admin/login";return}
   setProducts(await p.json());
   setOrders(await o.json());
   setCats(await c.json());
   setCollections(await cl.json());
   setDiscounts(await d.json());
+  setPromos(await pr.json());
   if(se.ok) setHero(await se.json());
   if(st.ok) setStats(await st.json());
   if(lg.ok) setLogs(await lg.json());
@@ -162,6 +163,19 @@ export default function Admin(){
     return;
   }
   
+  if(tab === "promocodes") {
+    const url=edit?.id?`/api/admin/promocodes/${edit.id}`:"/api/admin/promocodes";
+    const payload={code:b.code,description:b.description,type:b.type||"PERCENT",value:Number(b.value),maxUses:b.maxUses?Number(b.maxUses):null,active:b.active==="on",startsAt:b.startsAt||null,expiresAt:b.expiresAt||null};
+    
+    const r=await fetch(url,{method:edit?.id?"PUT":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    const d=await r.json();
+    if(!r.ok){setMsg(d.error||"Ошибка");return}
+    setEdit(null);
+    setMsg("Промокод сохранён");
+    load();
+    return;
+  }
+  
   if(tab === "categories") {
     const url=edit?.id?`/api/admin/categories/${edit.id}`:"/api/admin/categories";
     const payload={name:b.name,slug:b.slug};
@@ -250,6 +264,7 @@ export default function Admin(){
     <button className={tab==="collections"?"active":""} onClick={()=>setTab("collections")}>Коллекции ({collections.length})</button>
     <button className={tab==="categories"?"active":""} onClick={()=>setTab("categories")}>Категории ({cats.length})</button>
     <button className={tab==="discounts"?"active":""} onClick={()=>setTab("discounts")}>Скидки ({discounts.length})</button>
+    <button className={tab==="promocodes"?"active":""} onClick={()=>setTab("promocodes")}>Промокоды ({promos.length})</button>
     <button className={tab==="orders"?"active":""} onClick={()=>setTab("orders")}>Заказы ({orders.length})</button>
     <button className={tab==="logs"?"active":""} onClick={()=>setTab("logs")}>Действия покупателей</button>
     <button className={tab==="adminlogs"?"active":""} onClick={()=>setTab("adminlogs")}>Действия админов</button>
@@ -411,6 +426,14 @@ export default function Admin(){
       {discounts.map(d=><div className="adminProduct" key={d.id}><div style={{padding:'10px',background:d.active?'#d5cec0':'#f0f0f0',borderRadius:'4px',color:'#1c1b19',fontWeight:'bold',textAlign:'center'}}>{d.value}{d.type==="PERCENT"?"%":"₽"}</div><div><b>{d.code}</b><small>{d.product?`На товар: ${d.product.name}`:d.collection?`На коллекцию: ${d.collection.name}`:"Универсальная"} · {d.active?"Активна":"Не активна"}</small>{d.description&&<em>{d.description}</em>}</div><strong>{d.usedCount}/{d.maxUses||"∞"}</strong><div className="adminActions"><button onClick={()=>setEdit(d)}>Редактировать</button><button onClick={()=>del(d.id,"discounts")}>Удалить</button></div></div>)}
     </section>
     <form className="adminForm" onSubmit={save}><h2>{edit?edit.id?"Редактирование скидки":"Новая скидка":"Выберите скидку"}</h2>{edit&&<><label>Код<input name="code" defaultValue={edit.code} required placeholder="SUMMER20"/></label><label>Описание<textarea name="description" defaultValue={edit.description||""} placeholder="Скидка 20% на летнюю коллекцию"/></label><label>Тип<select name="type" defaultValue={edit.type}><option value="PERCENT">Процент %</option><option value="FIXED">Фиксированная сумма ₽</option></select></label><label>Значение<input name="value" type="number" defaultValue={edit.value} required/></label><label>Макс использований<input name="maxUses" type="number" placeholder="Без ограничений" defaultValue={edit.maxUses||""}/></label><label>На товар<select name="productId"><option value="">Не выбран</option>{products.map(p=><option key={p.id} value={p.id} selected={edit.productId===p.id}>{p.name}</option>)}</select></label><label>На коллекцию<select name="collectionId"><option value="">Не выбрана</option>{collections.map(c=><option key={c.id} value={c.id} selected={edit.collectionId===c.id}>{c.name}</option>)}</select></label><label>Начало действия<input name="startsAt" type="datetime-local" defaultValue={edit.startsAt||""}/></label><label>Конец действия<input name="expiresAt" type="datetime-local" defaultValue={edit.expiresAt||""}/></label><label><input type="checkbox" name="active" defaultChecked={edit.active}/>Активна</label><div className="formButtons"><button className="darkButton">Сохранить</button><button type="button" onClick={()=>setEdit(null)}>Отмена</button></div>{msg&&<small>{msg}</small>}</>}</form>
+  </div>
+
+  :tab==="promocodes"?<div className="adminGrid">
+    <section className="adminTable">
+      <div className="adminTableTop"><h2>Промокоды</h2><button className="darkButton" onClick={()=>setEdit({id:0,code:"",description:"",type:"PERCENT",value:0,maxUses:null,active:true,startsAt:"",expiresAt:""})}>+ Новый промокод</button></div>
+      {promos.map(p=><div className="adminProduct" key={p.id}><div style={{padding:'10px',background:p.active?'#d5cec0':'#f0f0f0',borderRadius:'4px',color:'#1c1b19',fontWeight:'bold',textAlign:'center'}}>{p.value}{p.type==="PERCENT"?"%":"₽"}</div><div><b>{p.code}</b><small>{p.active?"Активен":"Не активен"}{p.expiresAt?` · до ${new Date(p.expiresAt).toLocaleDateString("ru-RU")}`:""}</small>{p.description&&<em>{p.description}</em>}</div><strong>{p.usedCount}/{p.maxUses||"∞"}</strong><div className="adminActions"><button onClick={()=>setEdit(p)}>Редактировать</button><button onClick={()=>del(p.id,"promocodes")}>Удалить</button></div></div>)}
+    </section>
+    <form className="adminForm" onSubmit={save}><h2>{edit?edit.id?"Редактирование промокода":"Новый промокод":"Выберите промокод"}</h2>{edit&&<><label>Код<input name="code" defaultValue={edit.code} required placeholder="SUMMER20"/></label><label>Описание<textarea name="description" defaultValue={edit.description||""} placeholder="Скидка 20% на летнюю коллекцию"/></label><label>Тип<select name="type" defaultValue={edit.type}><option value="PERCENT">Процент %</option><option value="FIXED">Фиксированная сумма ₽</option></select></label><label>Значение<input name="value" type="number" defaultValue={edit.value} required/></label><label>Макс использований<input name="maxUses" type="number" placeholder="Без ограничений" defaultValue={edit.maxUses||""}/></label><label>Начало действия<input name="startsAt" type="datetime-local" defaultValue={edit.startsAt||""}/></label><label>Конец действия<input name="expiresAt" type="datetime-local" defaultValue={edit.expiresAt||""}/></label><label><input type="checkbox" name="active" defaultChecked={edit.active}/>Активен</label><div className="formButtons"><button className="darkButton">Сохранить</button><button type="button" onClick={()=>setEdit(null)}>Отмена</button></div>{msg&&<small>{msg}</small>}</>}</form>
   </div>
 
   :tab==="logs"?<div className="adminGrid">
