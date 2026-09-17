@@ -130,7 +130,7 @@ export const emailTemplates = {
           </div>
 
           <p style="margin-top: 20px;">
-            <a href="${process.env.APP_URL}/orders/${order.id}" class="button">Отследить заказ</a>
+            <a href="${process.env.APP_URL}/orders/${order.id}?guest=${order.guestId || ''}" class="button">Отследить заказ</a>
           </p>
 
           <p>Если у вас есть вопросы, напишите нам: support@nella.premium</p>
@@ -184,7 +184,7 @@ export const emailTemplates = {
           </ul>
 
           <p style="margin-top: 20px;">
-            <a href="${process.env.APP_URL}/orders/${order.id}" style="display: inline-block; padding: 12px 20px; background: #10b981; color: #fff; text-decoration: none; border-radius: 4px;">Отследить заказ</a>
+            <a href="${process.env.APP_URL}/orders/${order.id}?guest=${order.guestId || ''}" style="display: inline-block; padding: 12px 20px; background: #10b981; color: #fff; text-decoration: none; border-radius: 4px;">Отследить заказ</a>
           </p>
 
           <p style="color: #666; font-size: 12px; margin-top: 30px;">
@@ -248,7 +248,7 @@ export const emailTemplates = {
           </p>
 
           <p style="margin-top: 20px;">
-            <a href="${process.env.APP_URL}/orders/${order.id}" style="display: inline-block; padding: 12px 20px; background: #3b82f6; color: #fff; text-decoration: none; border-radius: 4px;">Статус доставки</a>
+            <a href="${process.env.APP_URL}/orders/${order.id}?guest=${order.guestId || ''}" style="display: inline-block; padding: 12px 20px; background: #3b82f6; color: #fff; text-decoration: none; border-radius: 4px;">Статус доставки</a>
           </p>
         </div>
 
@@ -309,7 +309,7 @@ export const emailTemplates = {
           </p>
 
           <p style="margin-top: 20px;">
-            <a href="${process.env.APP_URL}/orders/${order.id}" style="display: inline-block; padding: 12px 20px; background: #10b981; color: #fff; text-decoration: none; border-radius: 4px;">Статус заказа</a>
+            <a href="${process.env.APP_URL}/orders/${order.id}?guest=${order.guestId || ''}" style="display: inline-block; padding: 12px 20px; background: #10b981; color: #fff; text-decoration: none; border-radius: 4px;">Статус заказа</a>
           </p>
 
           <p style="margin-top: 30px; color: #666; font-size: 12px;">

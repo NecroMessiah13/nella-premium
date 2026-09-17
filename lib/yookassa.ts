@@ -4,7 +4,7 @@ import axios from 'axios';
 export const yookassaConfig = {
   shopId: process.env.YOOKASSA_SHOP_ID ?? '',
   secretKey: process.env.YOOKASSA_SECRET_KEY ?? '',
-  apiUrl: 'https://payment.yookassa.ru/api/v3',
+  apiUrl: 'https://api.yookassa.ru/v3',
 };
 
 function requireCreds() {
@@ -27,11 +27,11 @@ export async function createPayment(orderId: number, amount: number, description
           currency: 'RUB'
         },
         payment_method_data: {
-          type: 'payment_card'
+          type: 'bank_card'
         },
         confirmation: {
           type: 'redirect',
-          return_url: `${process.env.YOOKASSA_RETURN_URL}/success?orderId=${orderId}`
+          return_url: `${process.env.YOOKASSA_RETURN_URL || `${process.env.APP_URL || 'http://localhost:3000'}/payment/success`}?orderId=${orderId}`
         },
         description: description,
         metadata: {

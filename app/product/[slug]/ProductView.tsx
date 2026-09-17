@@ -92,7 +92,7 @@ export function ProductView({slug}:{slug:string}){
   return <main className="detailPage">
     <div className={'detailPhoto '+p.tone}>
       {currentImage ? (
-        <img src={currentImage.url} alt={p.name} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+        <img src={currentImage.url} alt={p.name} style={{width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center'}} />
       ) : (
         <span>НЕЛЛА</span>
       )}

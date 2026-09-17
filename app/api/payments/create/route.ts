@@ -41,13 +41,11 @@ export async function GET(request: Request) {
         `Заказ №${order.id} - Nella Premium`
       );
 
-      // Сохраняем payment ID и помечаем заказ оплаченным
+      // Сохраняем payment ID (оплата подтвердится через webhook)
       await prisma.order.update({
         where: { id: Number(orderId) },
         data: {
           paymentId: payment.id,
-          paymentStatus: 'PAID',
-          status: 'PROCESSING',
         }
       });
 

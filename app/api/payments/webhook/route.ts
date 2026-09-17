@@ -1,10 +1,22 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendEmail, emailTemplates } from '@/lib/email';
+import { verifyWebhookSignature } from '@/lib/yookassa';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const rawBody = await request.text();
+
+    // Проверяем подпись от YooKassa, если ключ задан
+    const secret = process.env.YOOKASSA_SECRET_KEY;
+    if (secret) {
+      const signature = request.headers.get('content-signature') || '';
+      if (!verifyWebhookSignature(rawBody, signature, secret)) {
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+      }
+    }
+
+    const body = JSON.parse(rawBody);
     if (!body.event) {
       return NextResponse.json({ success: true });
     }

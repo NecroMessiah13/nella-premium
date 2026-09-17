@@ -20,15 +20,30 @@ export default function PaymentSuccessPage() {
       return;
     }
 
-    fetch(`/api/orders/${oid}`)
-      .then(async r => (r.ok ? r.json() : null))
-      .then(d => {
-        if (!d) { setStatus('error'); return; }
-        if (d.paymentStatus === 'PAID' || d.status === 'PROCESSING') setStatus('paid');
-        else if (d.paymentStatus === 'FAILED' || d.paymentStatus === 'CANCELLED') setStatus('failed');
-        else setStatus('pending');
-      })
-      .catch(() => setStatus('error'));
+    let attempt = 0;
+    const check = async () => {
+      try {
+        const r = await fetch(`/api/payments/status?orderId=${oid}`);
+        const d = await r.json();
+        if (!d || d.error) throw new Error(d?.error || 'bad response');
+        if (d.paymentStatus === 'PAID' || d.status === 'PROCESSING') { setStatus('paid'); return; }
+        if (d.paymentStatus === 'FAILED' || d.paymentStatus === 'CANCELLED') { setStatus('failed'); return; }
+        if (attempt < 6) {
+          attempt++;
+          setTimeout(check, 2000);
+          return;
+        }
+        setStatus('pending');
+      } catch {
+        if (attempt < 3) {
+          attempt++;
+          setTimeout(check, 2000);
+          return;
+        }
+        setStatus('error');
+      }
+    };
+    check();
   }, []);
 
   if (status === 'loading') {
