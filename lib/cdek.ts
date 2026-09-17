@@ -3,6 +3,8 @@ import axios from 'axios';
 const CDEK_API_URL = 'https://api.cdek.ru/v2';
 const CDEK_TEST_URL = 'https://api.edu.cdek.ru/v2'; // Test URL
 
+const cdekBase = (isTest: boolean) => (isTest ? CDEK_TEST_URL : CDEK_API_URL);
+
 interface CDEKAuth {
   client_id: string;
   client_secret: string;
@@ -73,22 +75,25 @@ async function getCDEKToken(isTest: boolean = true): Promise<string> {
   }
 
   try {
-    const url = `${isTest ? CDEK_TEST_URL : CDEK_API_URL}/auth/token`;
-    
+    const url = `${cdekBase(isTest)}/oauth/token?grant_type=client_credentials`;
+
     const clientId = process.env.CDEK_API_KEY;
     const clientSecret = process.env.CDEK_ACCOUNT;
     if (!clientId || !clientSecret) {
       throw new Error('CDEK_API_KEY / CDEK_ACCOUNT are not configured');
     }
 
-    const response = await axios.post(url, {
-      grant_type: 'client_credentials',
-      client_id: clientId,
-      client_secret: clientSecret,
+    const params = new URLSearchParams({ grant_type: 'client_credentials' });
+
+    const response = await axios.post(url, params, {
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
     });
 
     cdekAccessToken = response.data.access_token;
-    cdekTokenExpiry = Date.now() + (response.data.expires_in * 1000) - 60000; // 60 сек запаса
+    cdekTokenExpiry = Date.now() + (Number(response.data.expires_in || 3600) * 1000) - 60000; // 60 сек запаса
 
     return cdekAccessToken;
   } catch (error) {
@@ -222,26 +227,27 @@ export async function getCDEKCities(search: string, isTest: boolean = true): Pro
   }
 }
 
-// Рассчитать стоимость доставки
-export async function calculateCDEKCost(
-  fromCity: string,
+// Получить тарифы СДЭК (калькулятор)
+export async function getCDEKRates(
   toCity: string,
   weight: number,
-  isTest: boolean = true
-): Promise<any> {
+  opts: { isTest?: boolean; senderCity?: string } = {}
+): Promise<any[]> {
   try {
+    const isTest = opts.isTest ?? true;
     const token = await getCDEKToken(isTest);
+    const senderCity = opts.senderCity || process.env.CDEK_SENDER_CITY || 'Георгиевск';
 
-    const url = `${isTest ? CDEK_TEST_URL : CDEK_API_URL}/calculator/tarifflist`;
+    const url = `${cdekBase(isTest)}/calculator/tarifflist`;
 
     const response = await axios.post(
       url,
       {
-        from_location: { city: fromCity },
+        from_location: { city: senderCity },
         to_location: { city: toCity },
         packages: [
           {
-            weight,
+            weight: Math.max(1, Math.round(weight)),
             length: 30,
             width: 20,
             height: 10,
@@ -256,7 +262,20 @@ export async function calculateCDEKCost(
       }
     );
 
-    return response.data;
+    const tariffs: any[] = response.data?.tariffs || [];
+
+    return tariffs
+      .filter((t) => typeof t.total_sum === 'number' && (t.delivery_mode === 1 || t.delivery_mode === 2))
+      .map((t) => ({
+        code: t.tariff_code,
+        name: t.tariff_name,
+        mode: t.delivery_mode === 2 ? 'PICKUP' : 'COURIER',
+        cost: Math.round(Number(t.delivery_sum ?? t.total_sum)),
+        daysMin: t.period_min,
+        daysMax: t.period_max,
+        currency: t.currency || 'RUB',
+      }))
+      .sort((a, b) => a.cost - b.cost);
   } catch (error) {
     console.error('CDEK calculation error:', error);
     throw error;

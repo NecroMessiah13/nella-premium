@@ -63,6 +63,8 @@ export const DELIVERY_LABEL: Record<string, string> = {
   COURIER: "Курьер",
   PICKUP: "Самовывоз",
   MAIL: "Почта России",
+  CDEK: "СДЭК",
+  OZON: "Ozon",
 };
 
 export const ORDER_STEPS: Record<string, number> = {

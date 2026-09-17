@@ -28,6 +28,8 @@ enum DeliveryMethod {
   PICKUP
   COURIER
   MAIL
+  CDEK
+  OZON
 }
 
 model Category {
