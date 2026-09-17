@@ -58,6 +58,9 @@ export default function CheckoutPage() {
   const [cdekLoading, setCdekLoading] = useState(false);
   const [cdekError, setCdekError] = useState('');
   const [cdekPicked, setCdekPicked] = useState<number | null>(null);
+  const [mailCost, setMailCost] = useState<number | null>(null);
+  const [mailLoading, setMailLoading] = useState(false);
+  const [mailError, setMailError] = useState('');
   const [errors, setErrors] = useState<{customerName?: string; email?: string; phone?: string; address?: string}>({});
   const [formData, setFormData] = useState({
     customerName: '',
@@ -69,7 +72,12 @@ export default function CheckoutPage() {
 
   const selectedDelivery = DELIVERY_METHODS.find(d => d.id === formData.deliveryMethod) || DELIVERY_METHODS[0];
   const cdekSelected = cdekTariffs.find(t => t.code === cdekPicked) || null;
-  const deliveryCostFinal = selectedDelivery.id === 'CDEK' ? (cdekSelected?.cost ?? 0) : selectedDelivery.cost;
+  const deliveryCostFinal =
+    selectedDelivery.id === 'CDEK'
+      ? (cdekSelected?.cost ?? 0)
+      : selectedDelivery.id === 'MAIL'
+        ? (mailCost ?? 300)
+        : selectedDelivery.cost;
   const promoDiscount = promoApplied?.discount || 0;
   const totalWithDelivery = total + deliveryCostFinal - promoDiscount;
 
@@ -156,6 +164,55 @@ export default function CheckoutPage() {
         })
         .finally(() => {
           if (!cancelled) setCdekLoading(false);
+        });
+    }, 500);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [formData.deliveryMethod, formData.address]);
+
+  // Расчёт тарифа Почты России по индексу в адресе
+  useEffect(() => {
+    if (formData.deliveryMethod !== 'MAIL') {
+      setMailCost(null);
+      setMailLoading(false);
+      setMailError('');
+      return;
+    }
+
+    const m = formData.address.match(/\b(\d{6})\b/);
+    if (!m) {
+      setMailCost(null);
+      setMailLoading(false);
+      setMailError('Укажите индекс в адресе для расчёта доставки');
+      return;
+    }
+
+    let cancelled = false;
+    setMailLoading(true);
+    setMailError('');
+
+    const t = setTimeout(() => {
+      const weight = items.reduce((s, i) => s + (i.qty || 1) * 300, 0);
+      fetch(`/api/shipping/calculate?service=MAIL&index=${m[1]}&weight=${weight}`)
+        .then(r => r.json())
+        .then(d => {
+          if (cancelled) return;
+          if (d.error || !Array.isArray(d.tariffs) || d.tariffs.length === 0) {
+            setMailCost(null);
+            setMailError(d.error || 'Расчёт Почты России недоступен');
+          } else {
+            setMailCost(d.tariffs[0].cost);
+            setMailError('');
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setMailError('Не удалось рассчитать доставку Почтой');
+        })
+        .finally(() => {
+          if (!cancelled) setMailLoading(false);
         });
     }, 500);
 
@@ -340,7 +397,7 @@ export default function CheckoutPage() {
                 <textarea
                   value={formData.address}
                   onChange={(e) => handleField('address', e.target.value)}
-                  placeholder="г. Москва, ул. Примерная, д. 123, кв. 45"
+                  placeholder="101000, г. Москва, ул. Примерная, д. 123, кв. 45"
                   rows={3}
                 />
                 {errors.address && <small className="fieldError">{errors.address}</small>}
@@ -362,11 +419,22 @@ export default function CheckoutPage() {
                     <div>
                       <b>{method.name}</b>
                       <small>{method.desc}</small>
-                      {method.cost > 0 && <small style={{display: 'block', color: '#ff6b6b'}}>{formatPrice(method.cost)}</small>}
+                      {method.cost > 0 && method.id !== 'MAIL' && <small style={{display: 'block', color: '#ff6b6b'}}>{formatPrice(method.cost)}</small>}
+                      {method.id === 'MAIL' && mailCost !== null && formData.deliveryMethod === 'MAIL' && <small style={{display: 'block', color: '#ff6b6b'}}>{formatPrice(mailCost)}</small>}
                     </div>
                   </label>
                 ))}
               </div>
+
+              {formData.deliveryMethod === 'MAIL' && (
+                  <div style={{ marginTop: '8px' }}>
+                    {mailLoading && <small className="accMuted">Рассчитываем тариф Почты России…</small>}
+                    {!mailLoading && mailError && <small className="fieldError">{mailError}</small>}
+                    {!mailLoading && !mailError && mailCost !== null && (
+                      <small className="accMuted">Доставка от {formatPrice(mailCost)} по индексу.</small>
+                    )}
+                  </div>
+                )}
 
               {formData.deliveryMethod === 'CDEK' && (
                 <div style={{ marginTop: '8px' }}>
