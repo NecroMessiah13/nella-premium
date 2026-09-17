@@ -1,6 +1,7 @@
 import "./globals.css";
 import "./account.css";
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { CartProvider } from "@/components/Cart";
 import { CartDrawer } from "@/components/CartDrawer";
 
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Header />
           <CartDrawer />
           {children}
+          <Footer />
         </CartProvider>
       </body>
     </html>
