@@ -13,10 +13,6 @@ export default function AccountLogin({
   const [name, setName] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
-  const [oauthError, setOauthError] = useState(
-    typeof window !== "undefined" &&
-      new URLSearchParams(window.location.search).get("oauth") === "error"
-  );
   const router = useRouter();
 
   async function submit(e: React.FormEvent) {
@@ -78,30 +74,6 @@ export default function AccountLogin({
         <div
           style={{
             display: "flex",
-            flexDirection: "column",
-            gap: 10,
-            marginBottom: 20,
-          }}
-        >
-          <a
-            href="/api/auth/oauth/google"
-            className="lightButton"
-            style={{ textAlign: "center", padding: "13px 15px" }}
-          >
-            Продолжить с Google
-          </a>
-          <a
-            href="/api/auth/oauth/apple"
-            className="lightButton"
-            style={{ textAlign: "center", padding: "13px 15px" }}
-          >
-            Продолжить с Apple
-          </a>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
             alignItems: "center",
             gap: 10,
             margin: "0 0 20px",
@@ -138,11 +110,6 @@ export default function AccountLogin({
             required
           />
           {err && <p className="error">{err}</p>}
-          {oauthError && (
-            <p className="error">
-              Не удалось войти через внешний сервис. Попробуйте ещё раз.
-            </p>
-          )}
           <button type="submit" className="darkButton fullButton" disabled={busy}>
             {busy
               ? "Пожалуйста, подождите…"
