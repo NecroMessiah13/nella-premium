@@ -23,27 +23,9 @@ type Profile = {
 const DELIVERY_METHODS = [
   { id: 'OZON', name: 'Ozon', cost: 0, desc: 'Бесплатная доставка Ozon по России, 1-5 дней' },
   { id: 'PICKUP', name: 'Самовывоз', cost: 0, desc: 'Пункт выдачи, город Георгиевск' },
-  { id: 'MAIL', name: 'Почта России', cost: 300, desc: '5-7 рабочих дней' },
-  { id: 'CDEK', name: 'СДЭК', cost: 0, desc: 'Расчёт по адресу получателя' }
+  { id: 'MAIL', name: 'Почта России', cost: 0, desc: 'Бесплатная доставка по России, 5-7 рабочих дней' },
+  { id: 'CDEK', name: 'СДЭК', cost: 0, desc: 'Бесплатная доставка — курьером или в пункт выдачи' }
 ];
-
-type CdekTariff = {
-  code: number;
-  name: string;
-  mode: 'COURIER' | 'PICKUP';
-  cost: number;
-  daysMin: number;
-  daysMax: number;
-  currency: string;
-};
-
-function extractCity(address: string): string {
-  const m = address.match(/(?:г\.?\s*|город\s+|гор\.?\s*)([А-ЯЁа-яё][А-ЯЁа-яё\s-]{1,40})/i);
-  if (m) return m[1].trim();
-  const first = address.split(',')[0].trim();
-  if (first && /^[А-ЯЁ][а-яё\s-]{1,39}$/.test(first)) return first;
-  return first;
-}
 
 export default function CheckoutPage() {
   const { items, total, clear } = useCart();
@@ -54,13 +36,6 @@ export default function CheckoutPage() {
   const [promoInput, setPromoInput] = useState('');
   const [promoApplied, setPromoApplied] = useState<{ code: string; discount: number } | null>(null);
   const [promoError, setPromoError] = useState('');
-  const [cdekTariffs, setCdekTariffs] = useState<CdekTariff[]>([]);
-  const [cdekLoading, setCdekLoading] = useState(false);
-  const [cdekError, setCdekError] = useState('');
-  const [cdekPicked, setCdekPicked] = useState<number | null>(null);
-  const [mailCost, setMailCost] = useState<number | null>(null);
-  const [mailLoading, setMailLoading] = useState(false);
-  const [mailError, setMailError] = useState('');
   const [errors, setErrors] = useState<{customerName?: string; email?: string; phone?: string; address?: string}>({});
   const [formData, setFormData] = useState({
     customerName: '',
@@ -71,13 +46,7 @@ export default function CheckoutPage() {
   });
 
   const selectedDelivery = DELIVERY_METHODS.find(d => d.id === formData.deliveryMethod) || DELIVERY_METHODS[0];
-  const cdekSelected = cdekTariffs.find(t => t.code === cdekPicked) || null;
-  const deliveryCostFinal =
-    selectedDelivery.id === 'CDEK'
-      ? (cdekSelected?.cost ?? 0)
-      : selectedDelivery.id === 'MAIL'
-        ? (mailCost ?? 300)
-        : selectedDelivery.cost;
+  const deliveryCostFinal = selectedDelivery.cost;
   const promoDiscount = promoApplied?.discount || 0;
   const totalWithDelivery = total + deliveryCostFinal - promoDiscount;
 
@@ -121,107 +90,6 @@ export default function CheckoutPage() {
     };
   }, []);
 
-  // Загрузка тарифов СДЭК при выборе способа доставки
-  useEffect(() => {
-    if (formData.deliveryMethod !== 'CDEK') {
-      setCdekTariffs([]);
-      setCdekPicked(null);
-      setCdekError('');
-      setCdekLoading(false);
-      return;
-    }
-
-    const city = extractCity(formData.address);
-    if (!city || formData.address.trim().length < 3) {
-      setCdekTariffs([]);
-      setCdekPicked(null);
-      setCdekError('Укажите город для расчёта СДЭК');
-      setCdekLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setCdekLoading(true);
-    setCdekError('');
-
-    const t = setTimeout(() => {
-      const weight = items.reduce((s, i) => s + (i.qty || 1) * 300, 0);
-      fetch(`/api/shipping/calculate?city=${encodeURIComponent(city)}&weight=${weight}`)
-        .then(r => r.json())
-        .then(d => {
-          if (cancelled) return;
-          if (d.error || !Array.isArray(d.tariffs) || d.tariffs.length === 0) {
-            setCdekTariffs([]);
-            setCdekPicked(null);
-            setCdekError(d.error || 'Нет тарифов СДЭК для этого города');
-          } else {
-            setCdekTariffs(d.tariffs);
-            setCdekPicked(d.tariffs[0].code);
-          }
-        })
-        .catch(() => {
-          if (!cancelled) setCdekError('Не удалось получить тарифы СДЭК');
-        })
-        .finally(() => {
-          if (!cancelled) setCdekLoading(false);
-        });
-    }, 500);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(t);
-    };
-  }, [formData.deliveryMethod, formData.address]);
-
-  // Расчёт тарифа Почты России по индексу в адресе
-  useEffect(() => {
-    if (formData.deliveryMethod !== 'MAIL') {
-      setMailCost(null);
-      setMailLoading(false);
-      setMailError('');
-      return;
-    }
-
-    const m = formData.address.match(/\b(\d{6})\b/);
-    if (!m) {
-      setMailCost(null);
-      setMailLoading(false);
-      setMailError('Укажите индекс в адресе для расчёта доставки');
-      return;
-    }
-
-    let cancelled = false;
-    setMailLoading(true);
-    setMailError('');
-
-    const t = setTimeout(() => {
-      const weight = items.reduce((s, i) => s + (i.qty || 1) * 300, 0);
-      fetch(`/api/shipping/calculate?service=MAIL&index=${m[1]}&weight=${weight}`)
-        .then(r => r.json())
-        .then(d => {
-          if (cancelled) return;
-          if (d.error || !Array.isArray(d.tariffs) || d.tariffs.length === 0) {
-            setMailCost(null);
-            setMailError(d.error || 'Расчёт Почты России недоступен');
-          } else {
-            setMailCost(d.tariffs[0].cost);
-            setMailError('');
-          }
-        })
-        .catch(() => {
-          if (!cancelled) setMailError('Не удалось рассчитать доставку Почтой');
-        })
-        .finally(() => {
-          if (!cancelled) setMailLoading(false);
-        });
-    }, 500);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(t);
-    };
-  }, [formData.deliveryMethod, formData.address]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -233,11 +101,6 @@ export default function CheckoutPage() {
     const e2 = validate();
     setErrors(e2);
     if (Object.keys(e2).length > 0) return;
-
-    if (selectedDelivery.id === 'CDEK' && !cdekSelected) {
-      alert(cdekLoading ? 'Расчёт тарифов СДЭК ещё выполняется, подождите…' : 'Выберите тариф СДЭК');
-      return;
-    }
 
     setLoading(true);
 
@@ -419,52 +282,10 @@ export default function CheckoutPage() {
                     <div>
                       <b>{method.name}</b>
                       <small>{method.desc}</small>
-                      {method.cost > 0 && method.id !== 'MAIL' && <small style={{display: 'block', color: '#ff6b6b'}}>{formatPrice(method.cost)}</small>}
-                      {method.id === 'MAIL' && mailCost !== null && formData.deliveryMethod === 'MAIL' && <small style={{display: 'block', color: '#ff6b6b'}}>{formatPrice(mailCost)}</small>}
                     </div>
                   </label>
                 ))}
               </div>
-
-              {formData.deliveryMethod === 'MAIL' && (
-                  <div style={{ marginTop: '8px' }}>
-                    {mailLoading && <small className="accMuted">Рассчитываем тариф Почты России…</small>}
-                    {!mailLoading && mailError && <small className="fieldError">{mailError}</small>}
-                    {!mailLoading && !mailError && mailCost !== null && (
-                      <small className="accMuted">Доставка от {formatPrice(mailCost)} по индексу.</small>
-                    )}
-                  </div>
-                )}
-
-              {formData.deliveryMethod === 'CDEK' && (
-                <div style={{ marginTop: '8px' }}>
-                  {cdekLoading && <small className="accMuted">Рассчитываем тарифы СДЭК…</small>}
-                  {!cdekLoading && cdekError && <small className="fieldError">{cdekError}</small>}
-                  {!cdekLoading && !cdekError && cdekTariffs.length === 0 && (
-                    <small className="accMuted">Укажите город в адресе для расчёта СДЭК.</small>
-                  )}
-                  {cdekTariffs.length > 0 && (
-                    <div className="deliveryOptions" style={{ marginTop: '6px' }}>
-                      {cdekTariffs.map(t => (
-                        <label key={t.code} className="deliveryOption" style={{ paddingLeft: '36px' }}>
-                          <input
-                            type="radio"
-                            name="cdekTariff"
-                            value={t.code}
-                            checked={cdekPicked === t.code}
-                            onChange={() => setCdekPicked(t.code)}
-                          />
-                          <div>
-                            <b>{t.name}</b>
-                            <small>{t.mode === 'PICKUP' ? 'До пункта выдачи' : 'Курьером до двери'} · {t.daysMin}–{t.daysMax} дн.</small>
-                            <small style={{display: 'block', color: '#ff6b6b'}}>{formatPrice(t.cost)}</small>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
             </fieldset>
 
             <fieldset>
@@ -520,7 +341,7 @@ export default function CheckoutPage() {
               )}
             </fieldset>
 
-            <button className="darkButton fullButton" disabled={loading || !isValid || (selectedDelivery.id === 'CDEK' && (!cdekSelected || cdekLoading))} title={!isValid ? 'Заполните обязательные поля' : (selectedDelivery.id === 'CDEK' && !cdekSelected ? 'Осознайте тариф СДЭК' : '')}>
+            <button className="darkButton fullButton" disabled={loading || !isValid} title={!isValid ? 'Заполните обязательные поля' : ''}>
               {loading ? 'Обработка...' : `Создать заказ - ${formatPrice(totalWithDelivery)}`}
             </button>
           </form>
@@ -528,7 +349,7 @@ export default function CheckoutPage() {
           <div className="checkoutInfo">
             <h3>Информация о доставке</h3>
             <ul>
-              <li>Бесплатная доставка Ozon по России</li>
+              <li>Бесплатная доставка по России: Ozon, СДЭК, Почта России</li>
               <li>Бесплатная примерка в течение 14 дней</li>
               <li>Полная гарантия качества</li>
               <li>Отслеживание заказа в реальном времени</li>
@@ -562,12 +383,10 @@ export default function CheckoutPage() {
               <span>Товары ({items.reduce((s, i) => s + i.qty, 0)} шт)</span>
               <span>{formatPrice(total)}</span>
             </div>
-            {deliveryCostFinal > 0 && (
-              <div className="totalRow">
-                <span>Доставка</span>
-                <span>{formatPrice(deliveryCostFinal)}</span>
-              </div>
-            )}
+            <div className="totalRow">
+              <span>Доставка</span>
+              <span>Бесплатно</span>
+            </div>
             {promoApplied && promoApplied.discount > 0 && (
               <div className="totalRow" style={{ color: '#2e7d32' }}>
                 <span>Скидка</span>

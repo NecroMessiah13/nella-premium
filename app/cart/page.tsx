@@ -43,7 +43,7 @@ export default function CartPage() {
           <aside className="summary">
             <h2>Итого</h2>
             <div><span>Товары</span><b>{formatPrice(total)}</b></div>
-            <div><span>Доставка</span><b>рассчитается при оформлении</b></div>
+            <div><span>Доставка</span><b>Бесплатно</b></div>
             <button className="darkButton fullButton" onClick={() => window.location.href = '/checkout'}>Оформить заказ</button>
             <Link className="lightButton fullButton" href="/catalog" style={{ display: 'block', textAlign: 'center', marginTop: '10px', textDecoration: 'none' }}>Продолжить покупки</Link>
             <button className="clearCart" onClick={clear} style={{ border: 0, background: 'none', color: '#999', cursor: 'pointer', marginTop: '10px', textDecoration: 'underline', fontSize: '12px' }}>Очистить корзину</button>
