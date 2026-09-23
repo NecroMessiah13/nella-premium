@@ -22,7 +22,7 @@ export async function GET() {
     return NextResponse.json({ user, orders, wishlistCount, addresses });
   } catch (e: any) {
     if (e?.message === "UNAUTHORIZED") {
-      return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+      return NextResponse.json({ user: null, orders: [], wishlistCount: 0, addresses: [] });
     }
     return NextResponse.json({ error: "Ошибка загрузки кабинета" }, { status: 500 });
   }

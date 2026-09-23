@@ -6,6 +6,7 @@ import { CartProvider } from "@/components/Cart";
 import { CartDrawer } from "@/components/CartDrawer";
 
 export const metadata = {
+  metadataBase: new URL("https://nellapremium.ru"),
   title: "Nella Premium — швейный бренд",
   description: "Женская одежда от бренда Nella Premium."
 };
